@@ -1,0 +1,52 @@
+<#
+Script that unlocks AD accounts.
+Author:
+Christopher Bliss, IT1 | cjbliss9@gmail.com | CSAP, CySA+ and Sec+
+
+Should be run on DC01 with full permissions. 
+
+#########################################################################
+
+    This PowerShell script is designed to unlock Active Directory (AD) user accounts 
+    that have been locked out. It prompts the user for the locked-out username and 
+    offers the option to reset the password to a default value. After executing, 
+    it unlocks the specified account and provides feedback to the user.
+
+#########################################################################
+
+Code Summary
+1. Prompts user to enter the locked-out username.
+2. Offers to change the password to a default value.
+3. Unlocks the specified AD account.
+
+#>
+
+# Import the Active Directory module to utilize AD-related commands
+Import-Module ActiveDirectory
+
+# Clear the console for a clean workspace
+clear-host
+
+# Prompt the user to enter the username of the locked-out account
+$Username = Read-Host "Enter Username"
+
+# Prompt the user for confirmation on whether to reset the password to the default value
+$pass = Read-Host "Do you want to change password to default(Y/N)"
+
+# Check if the user wants to reset the password to the default
+If ( "Y" -eq $pass ) {
+    # Set the AD account password to a predefined default value
+    Set-ADAccountPassword -Identity $Username -NewPassword (ConvertTo-SecureString -AsPlainText 'Pa$$word!!!!!!' -Force)
+    # Force the user to change their password at next logon
+    Set-ADUser $Username -ChangePasswordAtLogon $True
+    
+}
+
+# If the user chose not to change the password to default
+If ( "N" -eq $pass) {
+    # Inform the user that the account has been unlocked without changing the password
+    Echo "$Username has been Unlocked!"
+}
+
+# Unlock the specified locked-out user account in Active Directory
+Unlock-ADAccount -Identity $Username
