@@ -1,0 +1,39 @@
+<#
+Script that finds all users not required to use a smart card.
+Author:
+Christopher Bliss, IT1 | cjbliss9@gmail.com | CSAP, CySA+ and Sec+
+
+Should be run on MRDS01/DC01 with full permissions.
+
+#########################################################################
+
+    This PowerShell script retrieves all users from the "CANES Users" 
+    organizational unit in Active Directory and checks their smart card 
+    logon requirements. It identifies users who are not required to use 
+    a smart card. The script is designed to export any users without 
+    smart card requirements to a CSV file.
+
+#########################################################################
+
+Code Summary
+1. Prompts user for output file path and SearchBase
+2. Retrieves all users from OU
+3. Filters for users not required to use a smart card
+4. Exports results to a CSV file
+
+#>
+
+# Prompt the user to enter a file path for the output CSV file where results will be exported
+$Location = Read-Host 'Enter a File Path for Outfile Ex. \\NETWORK\SHARE\FILE.CSV'
+
+# Prompt the user to enter the search base (OU) from which to retrieve users
+$Searchbase = Read-Host 'Enter SearchBase'
+
+# Retrieve all Active Directory users within the specified search base and include all properties
+Get-ADUser -Filter * -Properties * -SearchBase $Searchbase `
+ # Filter results to only include users who are not required to use smart cards for login
+ | Where-Object { $_.SmartCardLogonRequired -eq $False } `
+ # Select relevant properties for the output: SamAccountName and SmartCardLogonRequired
+ | Select SamAccountName, SmartCardLogonRequired `
+ # Export the filtered results to a specified CSV file without including type information in the output
+ | Export-Csv $Location -NoTypeInformation  
