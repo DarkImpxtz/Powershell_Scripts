@@ -1,0 +1,54 @@
+<#
+Script that get all information from computers on network for Network
+Inventory
+Author:
+Christopher Bliss, IT1 | cjbliss9@gmail.com | CSAP, CySA+, SAL1, and Sec+
+
+#########################################################################
+
+    This PowerShell script retrieves a list of all computers with names 
+    matching "U-" from Active Directory. It uses the Get-ADComputer 
+    command to gather the necessary information and then connects to 
+    each computer using a PowerShell session. The script collects 
+    BIOS details, including the manufacturer and serial number, and 
+    appends this data to a CSV file for reporting purposes. Error handling 
+    is implemented to ensure the script runs smoothly even if some 
+    connections fail.
+
+#########################################################################
+
+Code Summary
+1. Establishes computer list from AD
+2. Prompts for credentials
+3. Creates a session for each computer
+4. Collects BIOS information
+5. Appends data to a CSV file
+
+#>
+
+# Get all computer accounts from Active Directory and filter to only include those with names starting with "U-"
+$Computers = Get-ADComputer -Filter * -Properties * | where { $_.Name -match "U-" } | Select Name
+
+# Prompt the user for their credentials (username and password)
+$Cred = Get-Credential
+
+# Create an empty array list to hold results
+$Result = New-Object System.Collections.ArrayList
+
+# Loop through each computer found in the previous list
+Foreach ($Computer in $Computers) {
+    # Create a new PowerShell session to the current computer using the provided credentials
+    $Session = New-PSSession -ComputerName $Computer.Name -Authentication Kerberos -Credential $Cred
+    
+    # Run commands on the remote computer session
+    Invoke-Command -Session $Session -ScriptBlock {
+        # Get the BIOS information from the current computer
+        Get-WMIObject win32_bios -ErrorAction SilentlyContinue | ForEach-Object {
+            # Create a custom object to hold the BIOS details
+            [PSCustomObject]@{
+                ComputerName = $_.PSComputerName  # Capture the computer's name
+                Manufacturer = $_.Manufacturer      # Capture the BIOS manufacturer
+                SerialNumber = $_.SerialNumber      # Capture the BIOS serial number
+            }
+        }
+    } | Export-Csv \\fs01\share\Computer.csv -Append  # Save the results to a CSV file, adding to it
