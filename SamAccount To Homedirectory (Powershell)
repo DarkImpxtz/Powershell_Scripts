@@ -1,0 +1,43 @@
+<#
+Script that checks Active Directory users' home directory paths
+Author:
+Christopher Bliss, IT1 | cjbliss9@gmail.com | CSAP, CySA+ and Sec+
+Should be run on DC01 with full permissions. 
+
+#########################################################################
+
+    This PowerShell script retrieves all users from Active Directory and 
+    examines their home directory paths. It compares each user's 
+    SamAccountName to their HomeDirectory to find any discrepancies 
+    (i.e., if the paths do not match). The results of this comparison 
+    are exported to a CSV file, showing which users have incorrect 
+    home directory paths.
+
+    There are two variable that must be defined within the script
+    1. Line 30 = Searchbase
+    2. Line 43 = CSV Location
+
+#########################################################################
+
+Code Summary
+1. Gets all AD users
+2. Retrieves home directory paths
+3. Compares SamAccountName with HomeDirectory path
+4. Exports results of mismatched paths
+
+#>
+
+# Assigns a location to pull information from.
+Get-ADUser -Filter * -SearchBase <#ENTER SEARCH BASE HERE#> -Properties HomeDirectory |
+    ForEach-Object {
+        # Store HomeDirectory path for comparison
+        $pathvalue = $_.HomeDirectory
+        # Check if HomeDirectory matches SamAccountName
+        if ($pathvalue -notmatch $_.samaccountname) {
+            # Create an object for output
+            [PSCustomObject]@{
+                HomeDirectory = $pathvalue
+                Samaccountname = $_.samAccountName
+            } 
+        }
+    } | Export-Csv <#INPUT WHERE YOU WANT THE CSV TO GO#> -NoTypeInformation
