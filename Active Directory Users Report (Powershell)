@@ -1,0 +1,34 @@
+<#
+Script that generates a report of Enabled ADUsers
+Author:
+Christopher Bliss, IT1 | cjbliss9@gmail.com | CSAP, CySA+, SAL1, and Sec+
+
+#########################################################################
+
+    This PowerShell script counts how many user accounts are currently 
+    enabled in a specific organizational unit (OU) in Active Directory. 
+    It looks for users in the your defined OU and uses the Get-ADUser 
+    command to find and count those that are enabled. The script 
+    includes error handling to manage any issues during the process and 
+    displays the total count of enabled users for easy reference.
+
+#########################################################################
+
+Code Summary
+1.Establishs OU Path
+2.Tries Command to grab number of enabled users
+3.Reports number of enabled users
+4.If error occurs it is reported
+
+#>
+
+#Define OU Path
+$OUpath = #Place Path Here
+
+#Attempts to verify number of enabled users
+try {
+    $enabledUsersCount = (Get-ADUser -Filter * -SearchBase $OUpath | Where-Object {$_.Enabled -eq $true}).Count
+    Write-Output "Count of enabled users: $enabledUsersCount"
+} catch {
+    Write-Error "An error occurred while retrieving users from the specified OU: $_"
+}
