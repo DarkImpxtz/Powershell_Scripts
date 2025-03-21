@@ -1,0 +1,48 @@
+<#
+Script for handling SIEM alerts daily.
+Author:
+Christopher Bliss, IT1 | cjbliss9@gmail.com | CSAP, CySA+ and Sec+
+
+#########################################################################
+
+    This PowerShell script retrieves SIEM alerts from the System Center Operations 
+    Manager (SCOM) for a specified computer and exports them to a CSV file. It checks 
+    for alerts that have been modified within the last day. If no recent alerts are found, 
+    it exports the current SIEM alerts to a specified CSV file.
+
+    You can add Send-MailMessage in order to send it to an administrator - Bliss
+
+#########################################################################
+
+Code Summary
+1. Prompts user for the computer name to check for alerts.
+2. Prompts user for the output CSV file path.
+3. Retrieves and exports SIEM alerts based on criteria.
+
+#>
+
+# Import the Operations Manager module to utilize SCOM-related commands
+Import-Module OperationsManager
+
+# Clear the console for a clean workspace
+clear-host
+
+# Prompt the user to enter the computer name to check for SIEM alerts
+$ComputerName = Read-Host "Enter the Computer Name (e.g., EM01)"
+
+# Prompt the user to enter the output file path for the CSV file
+$OutputFilePath = Read-Host "Enter output CSV file path (e.g., \\NETWORK\SHARE\FILE.CSV)"
+
+# Retrieve SIEM alerts for the specified computer that have been modified in the last day
+$SIEM_Alert = Get-SCOMAlert -ComputerName $ComputerName | where {$_.Name -eq "SIEM Alerts"} | where {$_.LastModified -ge (Get-Date).AddDays(-1)}
+
+# Check if there are no recent SIEM alerts
+if ($SIEM_Alert -eq $null){
+    # Export current SIEM alerts to the specified CSV file if no recent alerts are found
+    Get-SCOMAlert -ComputerName $ComputerName | where {$_.Name -eq "SIEM Alerts"} | Select Name, TimeRaised, Description | Export-Csv $OutputFilePath -NoTypeInformation
+}
+else
+{
+    # Export the recent SIEM alerts to the specified CSV file
+    Get-SCOMAlert -ComputerName $ComputerName | where {$_.Name -eq "SIEM Alerts"} | Select Name, TimeRaised, Description | Export-Csv $OutputFilePath -NoTypeInformation
+}
