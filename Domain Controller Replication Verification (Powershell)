@@ -1,0 +1,38 @@
+<#
+Script that retrieves replication metadata from Active Directory Domain Controllers.
+Author:
+Christopher Bliss, IT1 | cjbliss9@gmail.com | CSAP, CySA+ and Sec+
+
+Should be run with appropriate permissions.
+
+#########################################################################
+
+    This PowerShell script gathers information about Active Directory Domain 
+    Controllers and retrieves their replication metadata. Specifically, it 
+    lists the last successful replication status for each Domain Controller 
+    in the specified domain. The results are then exported to a CSV file for 
+    further analysis or reporting.
+
+#########################################################################
+
+Code Summary
+1. Retrieves the names of all domain controllers.
+2. Collects replication metadata for the domain specified.
+3. Exports the server names and the last replication success information to a CSV file.
+
+#>
+
+# Retrieve the names of all domain controllers in the current environment
+Get-ADDomainController -Filter * | 
+# For each domain controller, execute the following
+Foreach-Object { 
+    # Fetch the distinguished name of the domain and discard output (Out-Null)
+    (Get-ADDomain).DistinguishedName | Out-Null
+}
+
+# Get replication partner metadata for the specified target domain
+Get-ADReplicationPartnerMetadata -Target <#ADD TARGET DOMAIN (e.g. domain.com)#> -Scope Domain |
+# Select the Server name and the LastReplicationSuccess properties
+Select-Object Server, LastReplicationSuccess |
+# Export the selected information to a CSV file at the specified location
+Export-Csv <#Add where you want the CSV to go#>
