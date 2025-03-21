@@ -1,0 +1,48 @@
+<#
+Script that gets computer names and disk space information.
+Author:
+Christopher Bliss, IT1 | cjbliss9@gmail.com | CSAP, CySA+, SAL1, and Sec+
+#########################################################################
+
+    This PowerShell script retrieves a list of all computers in Active 
+    Directory with names matching "U-WS". It establishes a session to 
+    each computer to gather details about logical disks, including the 
+    system name, device ID, total size, and free space in gigabytes. 
+    The collected data is exported to a CSV file located on a specified 
+    share drive. If you want to change the file location, make sure 
+    to update line 47 of the script.
+
+#########################################################################
+
+Script Steps
+1. Get the list of AD computers
+2. Loop through each computer
+3. Gather disk information into a list
+4. Export the list to CSV on the specified share drive
+
+#>
+
+# Retrieve a list of all Active Directory computer objects with names matching "U-WS"
+$Computers = Get-ADComputer -Filter * -Properties * | where { $_.Name -match "U-WS" } | Select Name
+
+# Prompt for user credentials to authenticate to remote sessions
+$Cred = Get-Credential
+
+# Create a new ArrayList object to store results
+$Result = New-Object System.Collections.ArrayList
+
+# Loop through each computer retrieved from Active Directory
+Foreach ($Computer in $Computers) {
+    # Create a new PowerShell session to the computer using Kerberos authentication and provided credentials
+    $Session = New-PSSession -ComputerName $Computer.Name -Authentication Kerberos -Credential $Cred
+    
+    # Execute the following script block on the remote computer
+    Invoke-Command -Session $Session -ScriptBlock {
+        # Retrieve a list of logical disks for the system
+        Get-WmiObject Win32_LogicalDisk | 
+        # Select relevant properties, formatting size and free space in GB
+        Select SystemName, DeviceID, 
+            @{Name = 'size(GB)'; Expression = {"{0:N1}" -f ($_.Size / 1GB)}}, # Calculate and format size in GB
+            @{Name = 'freespace(GB)'; Expression = {"{0:N1}" -f ($_.FreeSpace / 1GB)} } # Calculate and format free space in GB
+    } >> \\NETWORKSHARE\SHARE\FILE.CSV # Append the collected disk information to the specified CSV file
+}
