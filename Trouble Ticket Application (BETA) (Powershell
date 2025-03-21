@@ -1,0 +1,322 @@
+<#
+Script that creates and checks the status of internal trouble tickets.
+Author:
+Christopher Bliss, IT1 | cjbliss9@gmail.com | CSAP, CySA+, SAL1 and Sec+
+
+#########################################################################
+
+    This PowerShell script provides a graphical user interface (GUI) for creating and checking the status 
+    of internal trouble tickets. The script allows users to submit new tickets, which are assigned unique 
+    ticket numbers, as well as check the status of previously created tickets. 
+
+    THIS IS MEANT TO BE DEPLOYED TO WORKSTATIONS!
+
+    If you have any questions, please contact me at cjbliss9@gmail.com
+
+#########################################################################
+
+Code Summary
+1. Creates a GUI for trouble ticketing
+2. Creates a trouble ticket and assigns a number
+3. Checks status of trouble tickets
+
+#>
+
+# Create a directory for trouble tickets; suppress errors if the directory already exists
+New-Item -Path \\FS01\Share -Name "Test Ticket" -ItemType Directory -ErrorAction SilentlyContinue
+
+# Load required assemblies for Windows Forms and Drawing to create a GUI
+Add-Type -AssemblyName System.Windows.Forms
+Add-Type -AssemblyName System.Drawing
+
+# Create the main form for the trouble ticket system
+$Main = New-Object System.Windows.Forms.Form
+$Main.Text = "Bliss Trouble Ticket System"
+$Main.Size = New-Object System.Drawing.Size(500,400)
+$Main.StartPosition = 'CenterScreen'
+
+# Add a welcome label to the main form
+$label = New-Object System.Windows.Forms.Label
+$label.Location = New-Object System.Drawing.Point(140,70)
+$label.Size = New-Object System.Drawing.Size(280,20)
+$label.Text = 'Welcome to Bliss Trouble Ticket System'
+$Main.Controls.Add($label)
+
+# Create and configure a button to check the status of tickets
+$exit = New-Object System.Windows.Forms.Button
+$exit.Location = New-Object System.Drawing.Point(170,150)
+$exit.Size = New-Object System.Drawing.Size(150,30)
+$exit.Text = 'Check Status'
+$exit.DialogResult = [System.Windows.Forms.DialogResult]::Cancel
+$Main.AcceptButton = $exit
+$Main.Controls.Add($exit)
+
+# Create and configure a button to submit new trouble tickets
+$Begin = New-Object System.Windows.Forms.Button
+$Begin.Location = New-Object System.Drawing.Point(170,100)
+$Begin.Size = New-Object System.Drawing.Size(150,30)
+$Begin.Text = 'Submit New T/T'
+$Begin.DialogResult = [System.Windows.Forms.DialogResult]::Ok
+$Main.AcceptButton = $Begin
+$Main.Controls.Add($Begin)
+
+# Display the main form and capture the user's selection
+$rs = $Main.ShowDialog()
+
+# If the user chose to check the status of tickets
+If($rs -eq [System.Windows.Forms.DialogResult]::Cancel) {
+    # Create a new form for displaying ticket status
+    $form = New-Object System.Windows.Forms.Form
+    $form.Text = 'Bliss Trouble Ticket System (BETA)'
+    $form.Size = New-Object System.Drawing.Size(300,200)
+    $form.StartPosition = 'CenterScreen'
+
+    # Create OK and Cancel buttons for the status form
+    $OKButton = New-Object System.Windows.Forms.Button
+    $OKButton.Location = New-Object System.Drawing.Point(75,120)
+    $OKButton.Size = New-Object System.Drawing.Size(75,23)
+    $OKButton.Text = 'OK'
+    $OKButton.DialogResult = [System.Windows.Forms.DialogResult]::OK
+    $form.AcceptButton = $OKButton
+    $form.Controls.Add($OKButton)
+
+    $CancelButton = New-Object System.Windows.Forms.Button
+    $CancelButton.Location = New-Object System.Drawing.Point(150,120)
+    $CancelButton.Size = New-Object System.Drawing.Size(75,23)
+    $CancelButton.Text = 'Cancel'
+    $CancelButton.DialogResult = [System.Windows.Forms.DialogResult]::Cancel
+    $form.CancelButton = $CancelButton
+    $form.Controls.Add($CancelButton)
+
+    # Add a label to prompt the user to make a selection
+    $label = New-Object System.Windows.Forms.Label
+    $label.Location = New-Object System.Drawing.Point(10,20)
+    $label.Size = New-Object System.Drawing.Size(280,20)
+    $label.Text = 'Please make a selection from the list below:'
+    $form.Controls.Add($label)
+
+    # Create a ListBox to display existing tickets related to the user
+    $listBox = New-Object System.Windows.Forms.Listbox
+    $listBox.Location = New-Object System.Drawing.Point(10,40)
+    $listBox.Size = New-Object System.Drawing.Size(260,20)
+    $listBox.SelectionMode = 'MultiExtended'
+
+    # Fetch files corresponding to the current user's trouble tickets
+    $Files = Get-ChildItem "\\fs01\Share\Test Ticket" | Where-Object { $_.Name -match $env:USERNAME }
+
+    # Populate the ListBox with the trouble ticket files
+    Foreach($File in $Files) {
+        [void] $listBox.Items.Add("$File") 
+    }
+    $listBox.Height = 70
+    $form.Controls.Add($listBox)
+    $form.Topmost = $true
+
+    # Show the status form and capture the result
+    $result = $form.ShowDialog()
+
+    # If the user selected a ticket to check the status
+    if ($result -eq [System.Windows.Forms.DialogResult]::OK) {
+        $x = $listBox.SelectedItems
+    }
+
+    # If the user cancelled the operation, exit the script
+    if ($result -eq [System.Windows.Forms.DialogResult]::Cancel) {
+        exit
+    }
+
+    # Display the contents of the selected ticket
+    if ($result -eq [System.Windows.Forms.DialogResult]::OK) {
+        $test = $x
+    }
+    $User = $env:USERNAME  
+    $Out = "$test"
+
+    # Get the details of the selected ticket
+    $Files = Get-Item "\\fs01\Share\Test Ticket"
+
+    foreach($File in $Files) {
+        Get-Content -Path "\\fs01\Share\Test Ticket\$test"
+    }
+
+    # Create the final status form to show ticket details
+    $form = New-Object System.Windows.Forms.Form
+    $form.Text = 'Bliss Trouble Ticket System (BETA)'
+    $form.Size = New-Object System.Drawing.Size(500,500)
+    $form.StartPosition = 'CenterScreen'
+
+    # Create OK and Cancel buttons for the final status form
+    $okButton = New-Object System.Windows.Forms.Button
+    $okButton.Location = New-Object System.Drawing.Point(110,320)
+    $okButton.Size = New-Object System.Drawing.Size(85,50)
+    $okButton.Text = 'OK'
+    $okButton.DialogResult = [System.Windows.Forms.DialogResult]::OK
+    $form.AcceptButton = $okButton
+    $form.Controls.Add($okButton)
+
+    $cancelButton = New-Object System.Windows.Forms.Button
+    $cancelButton.Location = New-Object System.Drawing.Point(250,320)
+    $cancelButton.Size = New-Object System.Drawing.Size(85,50)
+    $cancelButton.Text = 'Cancel'
+    $cancelButton.DialogResult = [System.Windows.Forms.DialogResult]::Cancel
+    $form.CancelButton = $cancelButton
+    $form.Controls.Add($cancelButton)
+
+    # Retrieve the content of the selected trouble ticket
+    $Filecontent1 = Get-Content -Path "\\fs01\Share\Test Ticket\$test"
+    
+    # Add a label to display the content of the ticket
+    $label = New-Object System.Windows.Forms.Label
+    $label.Location = New-Object System.Drawing.Point(10,60)
+    $label.Size = New-Object System.Drawing.Size(280,150)
+    $label.Text = $Filecontent1 -join "`n"
+    $label.AutoSize = $false
+    $label.BackColor = [System.Drawing.Color]::FromARGB(75, [System.Drawing.Color]::FromName("Black"))
+    $form.Controls.Add($label)
+
+    # Add a label for the title "Current Status Report"
+    $label2 = New-Object System.Windows.Forms.Label
+    $label2.Location = New-Object System.Drawing.Point(180,20)
+    $label2.Size = New-Object System.Drawing.Size(110,20)
+    $label2.Text = "Current Status Report"
+    $label2.AutoSize = $true
+    $label2.BackColor = [System.Drawing.Color]::FromARGB(75, [System.Drawing.Color]::FromName("Black"))
+    $form.Controls.Add($label2)
+
+    $form.Topmost = $false
+
+    # Show the final ticket detail form
+    $result = $form.ShowDialog()
+}
+
+# If the user chose to submit a new trouble ticket
+If($rs -eq [System.Windows.Forms.DialogResult]::Ok) {
+    # Create a new form for submitting the ticket
+    $form = New-Object System.Windows.Forms.Form
+    $form.Text = 'Bliss Trouble Ticket System (BETA)'
+    $form.Size = New-Object System.Drawing.Size(500,500)
+    $form.StartPosition = 'CenterScreen'
+
+    # Create OK and Cancel buttons for submitting a new ticket
+    $okButton = New-Object System.Windows.Forms.Button
+    $okButton.Location = New-Object System.Drawing.Point(110,320)
+    $okButton.Size = New-Object System.Drawing.Size(85,50)
+    $okButton.Text = 'OK'
+    $okButton.DialogResult = [System.Windows.Forms.DialogResult]::OK
+    $form.AcceptButton = $okButton
+    $form.Controls.Add($okButton)
+
+    $cancelButton = New-Object System.Windows.Forms.Button
+    $cancelButton.Location = New-Object System.Drawing.Point(250,320)
+    $cancelButton.Size = New-Object System.Drawing.Size(85,50)
+    $cancelButton.Text = 'Cancel'
+    $cancelButton.DialogResult = [System.Windows.Forms.DialogResult]::Cancel
+    $form.CancelButton = $cancelButton
+    $form.Controls.Add($cancelButton)
+
+    # Create input fields for different parts of the ticket
+    $textBox = New-Object System.Windows.Forms.TextBox
+    $textBox.Location = New-Object System.Drawing.Point(10,70)
+    $textBox.Size = New-Object System.Drawing.Size(260,20)
+    $form.Controls.Add($textBox)
+
+    $textBox2 = New-Object System.Windows.Forms.TextBox
+    $textBox2.Location = New-Object System.Windows.Forms.TextBox
+    $textBox2.Location = New-Object System.Drawing.Point(10,120)
+    $textBox2.Size = New-Object System.Drawing.Size(260,20)
+    $form.Controls.Add($textBox2)
+
+    $textBox3 = New-Object System.Windows.Forms.TextBox
+    $textBox3.Multiline = $true;
+    $textBox3.Location = New-Object System.Drawing.Size(10,170)
+    $textBox3.Size = New-Object System.Drawing.Size(260,130)
+    $textBox3.ScrollBars = "Vertical"
+    $form.Controls.Add($textBox3)
+
+    # Add labels to describe the input fields
+    $label3 = New-Object System.Windows.Forms.Label
+    $label3.Location = New-Object System.Drawing.Point(10,100)
+    $label3.Size = New-Object System.Drawing.Size(110,20)
+    $label3.Text = "Enter the Location of the Computer"
+    $label3.AutoSize = $true
+    $label3.BackColor = [System.Drawing.Color]::FromARGB(75, [System.Drawing.Color]::FromName("Black"))
+    $form.Controls.Add($label3)
+
+    $label4 = New-Object System.Windows.Forms.Label
+    $label4.Location = New-Object System.Drawing.Point(10,150)
+    $label4.Size = New-Object System.Drawing.Size(110,20)
+    $label4.Text = "Enter a Brief Description of the Issue"
+    $label4.AutoSize = $true
+    $label4.BackColor = [System.Drawing.Color]::FromARGB(75, [System.Drawing.Color]::FromName("Black"))
+    $form.Controls.Add($label4)
+
+    # Add a label for workstation name entry
+    $label2 = New-Object System.Windows.Forms.Label
+    $label2.Location = New-Object System.Drawing.Point(10,50)
+    $label2.Size = New-Object System.Drawing.Size(110,20)
+    $label2.Text = "Please enter the Workstation Name"
+    $label2.AutoSize = $true
+    $label2.BackColor = [System.Drawing.Color]::FromARGB(75, [System.Drawing.Color]::FromName("Black"))
+    $form.Controls.Add($label2)
+
+    $label2 = New-Object System.Windows.Forms.Label
+    $label2.Location = New-Object System.Drawing.Point(150,20)
+    $label2.Size = New-Object System.Drawing.Size(110,20)
+    $label2.Text = "Please Fill in the Below Boxes"
+    $label2.AutoSize = $true
+    $label2.BackColor = [System.Drawing.Color]::FromARGB(75, [System.Drawing.Color]::FromName("Black"))
+    $form.Controls.Add($label2)
+
+    $form.Topmost = $false
+
+    # Pre-select the text box for entering workstation name
+    $form.Add_Shown({$textBox.Select()})
+    
+    # Show the form for submitting a new ticket and capture the result
+    $result = $form.ShowDialog()
+
+    $User = $env:USERNAME  
+    $test = Get-Random -Maximum 100  # Generate a random ticket number
+    $Out = "$User #$test"  # Combine username and ticket number
+
+    # Retrieve input from the text boxes to create the ticket details
+    $real = $textBox.Text
+    $ComName = "Computer Name:"
+    $End = $ComName + " " + $real
+
+    $real2 = $textBox2.Text
+    $Location = "Location:"
+    $real3 = $textBox3.Text
+    $Dis = "Brief Description: "
+    $End4 = $Dis + " " + $real3 
+    $End2 = $Location + " " + $real2
+    $User2 = "Username: "
+    $End3 = $User2 + " " + $env:USERNAME
+
+    $End5 = "Tech Assigned: No Tech Assigned"
+    $End6 = "Tech Notes: "
+
+    # Create a final array with all the ticket details
+    $Final = $End3,$End,$End2,$End4,$End5,$End6
+
+    # Write the ticket details to a CSV file named with the user's ticket number
+    $Final >> "\\fs01\Share\Test Ticket\$Out.csv"
+
+    # Create a new confirmation window displaying the newly created ticket number
+    $Main2 = New-Object System.Windows.Forms.Form
+    $Main2.Text = "Bliss Trouble Ticket System"
+    $Main2.Size = New-Object System.Drawing.Size(500,400)
+    $Main2.StartPosition = 'CenterScreen'
+
+    # Add a label to show the assigned ticket number
+    $label2 = New-Object System.Windows.Forms.Label
+    $label2.Location = New-Object System.Drawing.Point(120,20)
+    $label2.Size = New-Object System.Drawing.Size(110,20)
+    $label2.Text = "Your Trouble Ticket was assigned the number of $test"
+    $label2.AutoSize = $true
+    $label2.BackColor = [System.Drawing.Color]::FromARGB(75, [System.Drawing.Color]::FromName("Black"))
+    $Main2.Controls.Add($label2)
+
+    # Show the confirmation window
+    $rs = $Main2.ShowDialog()
+} 
