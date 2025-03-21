@@ -1,0 +1,32 @@
+<#
+Script that generates a report of Veeam Backups
+Author:
+Christopher Bliss, IT1 | cjbliss9@gmail.com | CSAP, CySA+, SAL1, and Sec+
+
+#########################################################################
+
+    This code can be run via task scheduler or using SCCM. It is
+    recommended to be automated. Addition Error handling to be
+    added later on but no real need for the develop of it. 
+    Operational script has Send-MailMessage within it but it not
+    included here as it is network specific.
+
+#########################################################################
+
+Code Summary
+1.Imports PSSnapin for Veeam
+2.Notifies User of Veeam Backup Starting
+3.Establishes connection to Veeam
+4.Grabs all jobs with end time within last day or so
+5.Generates a report.
+
+#>
+
+#Adds Snapin
+Add-PSSnapin VeeamPSSnapin
+
+#Notifies Admin of Veeam Report Generation
+Write-Host "Starting Veeam Backup Reporting"
+
+#Starts Session and generates report
+Get-VBRBackupSession | where {$_.EndTime -ge (Get-Date).AddDays(-.8)} | Select Name,Result,EndTime | Export-Csv #Add Location of CSV Export here or Add Send-MailMessage
