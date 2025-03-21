@@ -1,0 +1,42 @@
+<#
+Script that searches for old log files on the Exchange server in the L: drive and deletes logs that are older than 5 days.
+Author:
+Christopher Bliss, IT1 | cjbliss9@gmail.com | CSAP, CySA+, SAL1, and Sec+
+
+Should be run on the Exchange server under an account with full permissions to edit files.
+
+#########################################################################
+
+    This PowerShell script looks for log files in a specified directory on 
+    the Exchange server. It targets files with a .log extension and checks 
+    for any that haven't been modified in the last 5 days. Once identified, 
+    the script deletes those old log files. Ensure you have the right permissions 
+    when running it to avoid any permission issues.
+
+    NOTE:
+        This can and should be automated with task scheduler
+
+#########################################################################
+
+Code Summary
+1. Identify path to the log files on the Exchange server
+2. Specify the log file type to search for
+3. Find the logs older than 5 days
+4. Delete the old log files
+
+#>
+
+# Define the path where the Exchange log files are stored
+$path_to_logs = 'L:\Exchange\Logs' #This can be changed to match your networks setup
+
+# Define the file type that will be included in the search (e.g., .log files)
+$file_types_to_include = "*.log"
+
+# Get all log files in the specified path and its subdirectories
+$find_log_files = Get-ChildItem -Path $path_to_logs -Include $file_types_to_include -Recurse
+
+# Filter the found log files to locate those that were last modified more than 5 days ago
+$find_date_modified = $find_log_files | Where { $_.LastWriteTime -lt (Get-Date).AddDays(-5) }
+
+# Remove the old log files that were found in the previous step, forcing deletion without prompt
+$find_date_modified | Remove-Item -Force
