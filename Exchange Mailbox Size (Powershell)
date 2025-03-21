@@ -1,0 +1,45 @@
+<#
+Script that searches Exchange and reports the size of all mailboxes.
+Author:
+Christopher Bliss, IT1 | cjbliss9@gmail.com | CSAP, CySA+, SAL1, and Sec+
+
+#########################################################################
+
+    This PowerShell script is intended for use on the Exchange server 
+    to report the size of all mailboxes. It connects to Exchange with user-supplied 
+    credentials and retrieves mailbox sizes, allowing for monitoring and reporting.
+
+#########################################################################
+
+Code Summary
+1. Prompt for credentials for Exchange
+2. Get size of Exchange mailboxes
+
+#>
+
+# Add the Exchange PowerShell snap-in to gain access to Exchange cmdlets
+Add-PSSnapin Microsoft.Exchange.Management.PowerShell.E2010
+
+# Remove any existing PowerShell sessions related to Exchange
+Get-PSSession | Remove-PSSession
+
+# Requests Server Name
+$server = Read-host "Please enter the exchange server's name"
+
+# Prompt the user for credentials
+$User = Get-Credential -Message "Please enter your Exchange credentials"
+
+# Establish a new PowerShell session to the Exchange server using the specified credentials
+$Session = New-PSSession -ConfigurationName Microsoft.Exchange -ConnectionUri http://$server/PowerShell/ -Authentication Kerberos -Credential $User
+
+# Invoke the command to retrieve mailbox statistics, filter, and select the relevant properties
+Invoke-Command -Session $Session -ScriptBlock {
+    Get-Mailbox -ResultSize Unlimited | 
+    Get-MailboxStatistics | 
+    Select-Object DisplayName, TotalItemSize
+} | 
+Where-Object { $_.TotalItemSize -gt 99 } | 
+Select Name
+
+# Clean up and remove the session
+Remove-PSSession $Session
