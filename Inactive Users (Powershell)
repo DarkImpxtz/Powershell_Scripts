@@ -1,0 +1,43 @@
+<#
+Script that disables users 30 days inactive and deletes users 45 days inactive.
+Author:
+Christopher Bliss, IT1 | cjbliss9@gmail.com | CSAP, CySA+ and Sec+
+
+#########################################################################
+
+    This PowerShell script manages user accounts in Active Directory 
+    based on their inactivity. It searches for all user accounts in a 
+    specific organizational unit (OU) and checks their last logon date. 
+    Accounts that have been inactive for 30 days are disabled, while 
+    accounts inactive for 45 days are deleted. The script generates a 
+    report of disabled accounts and emails it for reference. 
+
+#########################################################################
+
+Code Summary:
+1. Searches for all users.
+2. Disables user accounts that are 30 days inactive.
+3. Deletes user accounts that are 45 days inactive.
+4. Sends an email report of disabled users.
+
+#>
+
+# Disables all users inactive for 30 days and sends report
+Get-ADUser -Filter * -Properties * -SearchBase <#Add OU Path here#> `
+    | Where { $_.LastLogonDate -lt (Get-Date).AddDays(-30) } `
+    | Where { $_.SamAccountName -notmatch "USA" } `
+    | Select DisplayName `
+    | Export-Csv -Path <#Add Attachment Path#>
+
+Send-MailMessage -From <#Add From Address here #> -To <#Add To Address here #> -SmtpServer <#Add SMTP Server #> -Subject "User Report for Disabled Accounts" -Body "Attached is a list of Users that have exceeded the 30 day inactive mark and are now Disabled" -Attachments <#Add Attachment Path#>
+
+Get-ADUser -Filter * -Properties * -SearchBase <#Add OU Path here#> `
+    | Where { $_.LastLogonDate -lt (Get-Date).AddDays(-30) } `
+    | Where { $_.SamAccountName -notmatch "USA" } `
+    | Disable-ADAccount -Confirm
+
+# Deletes all users inactive for 45 days
+Get-ADUser -Filter * -Properties * -SearchBase <#Add OU Path here#> `
+    | Where { $_.LastLogonDate -lt (Get-Date).AddDays(-45) } `
+    | Where { $_.SamAccountName -notmatch "USA" } `
+    | Remove-ADUser -Confirm
